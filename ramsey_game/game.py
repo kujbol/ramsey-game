@@ -23,21 +23,21 @@ class GameGraph:
     def start_game(self):
         self.player_manager.start_game()
 
-    def move(self, u, v, player_id):
+    def move(self, start_node, end_node, player_id):
         self.player_manager.move_player(player_id)
-        self.delete_available_move(player_id, u, v)
+        self._delete_available_move(player_id, start_node, end_node)
 
-        move_result = self.player_manager[player_id].move(u, v)
+        move_result = self.player_manager[player_id].move(start_node, end_node)
 
-        self.check_winning(move_result, player_id)
+        self._check_winning(move_result, player_id)
 
-    def delete_available_move(self, player_id, u, v):
+    def _delete_available_move(self, player_id, u, v):
         try:
             self.graph.remove_edge(u, v)
         except networkx.NetworkXError:
             raise InvalidMove(u, v, player_id)
         
-    def check_winning(self, move_result, player_id):
+    def _check_winning(self, move_result, player_id):
         if move_result >= self.finish_size:
             raise PlayerWon(player_id)
 

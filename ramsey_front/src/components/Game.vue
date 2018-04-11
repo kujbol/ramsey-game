@@ -20,115 +20,8 @@
       return {
         ws: null,
         graphData: {
-          nodes: [
-            {
-              "id": 0
-            },
-            {
-              "id": 1
-            },
-            {
-              "id": 2
-            },
-            {
-              "id": 3
-            },
-            {
-              "id": 4
-            },
-            {
-              "id": 5
-            },
-            {
-              "id": 6
-            }
-          ],
-          links: [
-            {
-              "source": 0,
-              "target": 1
-            },
-            {
-              "source": 0,
-              "target": 2
-            },
-            {
-              "source": 0,
-              "target": 3
-            },
-            {
-              "source": 0,
-              "target": 4
-            },
-            {
-              "source": 0,
-              "target": 5
-            },
-            {
-              "source": 0,
-              "target": 6
-            },
-            {
-              "source": 1,
-              "target": 2
-            },
-            {
-              "source": 1,
-              "target": 3
-            },
-            {
-              "source": 1,
-              "target": 4
-            },
-            {
-              "source": 1,
-              "target": 5
-            },
-            {
-              "source": 1,
-              "target": 6
-            },
-            {
-              "source": 2,
-              "target": 3
-            },
-            {
-              "source": 2,
-              "target": 4
-            },
-            {
-              "source": 2,
-              "target": 5
-            },
-            {
-              "source": 2,
-              "target": 6
-            },
-            {
-              "source": 3,
-              "target": 4
-            },
-            {
-              "source": 3,
-              "target": 5
-            },
-            {
-              "source": 3,
-              "target": 6
-            },
-            {
-              "source": 4,
-              "target": 5
-            },
-            {
-              "source": 4,
-              "target": 6
-            },
-            {
-              "source": 5,
-              "target": 6
-            }
-          ],
+          nodes: [],
+          links: [],
         },
       }
     },
@@ -231,6 +124,7 @@
       }
     },
     created: function() {
+      var gameComponent = this;
       this.ws = new WebSocket(
         'ws://0.0.0.0:8000/game/' + this.$route.params.roomId
       );
@@ -241,8 +135,9 @@
       this.ws.addEventListener('message', function (e) {
         var msg = JSON.parse(e.data);
         console.log(msg);
-        if (msg.type === 'MSG_GAME') {
-          this.graphData = msg.available_graph;
+        if (msg.type === "MSG_GAME") {
+          gameComponent.graphData = msg.body.available_graph;
+
         };
       });
     }

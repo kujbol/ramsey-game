@@ -12,7 +12,7 @@
             <v-icon>dashboard</v-icon>
           </v-list-tile-action>
           <v-list-tile-content>
-            <v-list-tile-title>Dashboard</v-list-tile-title>
+            <router-link :to="{ name: 'game', params: { roomId: 10 }}">Room</router-link>
           </v-list-tile-content>
         </v-list-tile>
         <v-list-tile @click="">

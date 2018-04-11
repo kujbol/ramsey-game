@@ -1,4 +1,5 @@
 import networkx
+from networkx.readwrite import json_graph
 
 from ramsey_game.exceptions import (
     InvalidMove,
@@ -23,6 +24,9 @@ class GameGraph:
     def start_game(self):
         self.player_manager.start_game()
 
+    def get_state(self):
+        return self.player_manager.state
+
     def move(self, start_node, end_node, player_id):
         self.player_manager.move_player(player_id)
         self._delete_available_move(player_id, start_node, end_node)
@@ -30,6 +34,12 @@ class GameGraph:
         move_result = self.player_manager[player_id].move(start_node, end_node)
 
         self._check_winning(move_result, player_id)
+
+    def dumps(self):
+        return {
+            'available_graph': json_graph.node_link_data(self.graph),
+            'players_graph': self.player_manager.dumps()
+        }
 
     def _delete_available_move(self, player_id, u, v):
         try:

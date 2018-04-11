@@ -1,12 +1,32 @@
-class InvalidMove(Exception):
+class GameException(Exception):
     pass
 
 
-class InvalidTurn(Exception):
+class InvalidMove(GameException):
     pass
 
 
-class EndGame(Exception):
+class InvalidTurn(GameException):
+    pass
+
+
+class GameStarted(GameException):
+    pass
+
+
+class GameNotStartedYet(GameException):
+    pass
+
+
+class NotEnoughPlayers(GameException):
+    pass
+
+
+class PlayerAlreadyInGame(GameException):
+    pass
+
+
+class EndGame(GameException):
     pass
 
 
@@ -15,12 +35,4 @@ class PlayerWon(EndGame):
 
 
 class Draw(EndGame):
-    pass
-
-
-class GameStarted(Exception):
-    pass
-
-
-class GameNotStartedYet(Exception):
     pass

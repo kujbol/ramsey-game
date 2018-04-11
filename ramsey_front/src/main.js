@@ -4,10 +4,8 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 import Vuetify from 'vuetify'
-import VueCytoscape from 'vue-cytoscape'
 
 import 'vuetify/dist/vuetify.min.css'
-import 'vue-cytoscape/dist/vue-cytoscape.css'
 
 Vue.use(Vuetify, { theme: {
   primary: '#ee44aa',
@@ -18,7 +16,6 @@ Vue.use(Vuetify, { theme: {
   success: '#4CAF50',
   warning: '#FFC107'
 }});
-Vue.use(VueCytoscape);
 
 Vue.config.productionTip = false;
 

@@ -7,8 +7,8 @@ Vue.use(Router);
 export default new Router({
   routes: [
     {
-      path: '/',
-      name: 'Game',
+      path: '/game/:roomId',
+      name: 'game',
       component: Game
     }
   ]

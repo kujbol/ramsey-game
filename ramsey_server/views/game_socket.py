@@ -1,8 +1,10 @@
 import uuid
 
 from aiohttp import web, WSMsgType
+from aiohttp_session import get_session
 
-from ramsey_game.exceptions import NotEnoughPlayers, GameException
+from ramsey_game.exceptions import NotEnoughPlayers, GameException, EndGame, \
+    PlayerWon, Draw
 from ramsey_game.game import GameGraph
 from ramsey_server.settings import log
 
@@ -11,6 +13,7 @@ MSG_MOVE = 'MSG_MOVE'
 MSG_GAME = 'MSG_GAME'
 MSG_ERROR = 'MSG_ERROR'
 MSG_INFO = 'MSG_INFO'
+MSG_WON = 'MSG_WON'
 MSG_CONNECT = 'MSG_CONNECT'
 
 
@@ -56,8 +59,9 @@ class GameSocket(web.View):
         return ws
 
     async def get_player(self):
-        player = uuid.uuid4()
-        return player
+        # session = await get_session(self.request)
+        # return session.get('player')
+        return uuid.uuid4()
 
     async def get_room(self, room_id):
         room = self.request.app['rooms'].get(room_id)
@@ -115,8 +119,25 @@ class GameHandler:
                 )
                 for _ws in self.room:
                     await _ws.send_json(
-                        message(MSG_MOVE, msg_json, self.player)
+                        message(MSG_GAME, self.game.dumps(), None)
                     )
+            except EndGame as exc:
+                for _ws in self.room:
+                    await _ws.send_json(
+                        message(MSG_GAME, self.game.dumps(), None)
+                    )
+
+                    if isinstance(exc, PlayerWon):
+                        await ws.send_json(
+                            message(MSG_WON, {'details': 'You Won!'}, None)
+                        )
+                    elif isinstance(exc, Draw):
+                        await _ws.send_json(
+                            message(MSG_INFO, {'details': 'Draw!!'}, None)
+                        )
+                    await _ws.close()
+                del self.game
+
             except GameException as exc:
                 await ws.send_json(
                     message(MSG_ERROR, {'details': repr(exc)}, self.player)

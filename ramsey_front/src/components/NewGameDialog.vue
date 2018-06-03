@@ -35,6 +35,7 @@
 
 <script>
     import axios from 'axios'
+    import {serverUrl, } from './../main'
     export default {
         name: "NewGameDialog",
         props: ['visible'],
@@ -83,7 +84,7 @@
             };
             axios
               .post(
-                'http://0.0.0.0:8000/games', data,
+                serverUrl + 'games', data,
                 {headers: {'Access-Control-Allow-Origin': '*',}}
               )
               .then(

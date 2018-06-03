@@ -35,7 +35,9 @@
   import Vue from 'vue'
   import * as d3 from 'd3'
   import * as d3color from 'd3-scale-chromatic'
-  import axios from 'axios'
+
+  import {webSocketServerUrl, } from './../main'
+
 
   export default Vue.extend({
     data () {
@@ -168,7 +170,7 @@
         var gameComponent = this;
         var messageCounter = 0;
         this.ws = new WebSocket(
-          'ws://0.0.0.0:8000/game/' + this.$route.params.roomId
+          webSocketServerUrl + 'game/' + this.$route.params.roomId
         );
         var ws = this.ws;
         this.ws.addEventListener('open', function (e) {

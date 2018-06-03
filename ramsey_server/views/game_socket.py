@@ -3,9 +3,13 @@ import uuid
 from aiohttp import web, WSMsgType
 from aiohttp_session import get_session
 
-from ramsey_game.exceptions import NotEnoughPlayers, GameException, EndGame, \
-    PlayerWon, Draw
-from ramsey_game.game import GameGraph
+from ramsey_game.exceptions import (
+    NotEnoughPlayers,
+    GameException,
+    EndGame,
+    PlayerWon,
+    Draw
+)
 from ramsey_server.settings import log
 
 
@@ -37,6 +41,15 @@ class GameSocket(web.View):
 
         room = await self.get_room(room_id)
         game = await self.get_game(room_id)
+        ws.player_id = player
+
+        if game is None or room is None:
+            await ws.send_json(
+                message(MSG_ERROR, {'details': 'Game not initialized'}, player)
+            )
+            await ws.close()
+            return ws
+
         room.append(ws)
 
         game_handler = GameHandler(game, room, player)
@@ -54,6 +67,13 @@ class GameSocket(web.View):
                 break
 
         room.remove(ws)
+
+        for _ws in room:
+            await _ws.close()
+
+        self.delete_room(room_id)
+        self.delete_game(room_id)
+
         log.debug('websocket connection closed')
 
         return ws
@@ -65,20 +85,17 @@ class GameSocket(web.View):
 
     async def get_room(self, room_id):
         room = self.request.app['rooms'].get(room_id)
-        if not room:
-            room = []
-            self.request.app['rooms'][room_id] = room
-
         return room
 
     async def get_game(self, room_id):
         game = self.request.app['games'].get(room_id)
-
-        if not game:
-            game = GameGraph(7, 3)
-            self.request.app['games'][room_id] = game
-
         return game
+
+    def delete_room(self, room_id):
+        self.request.app['rooms'].pop(room_id, None)
+
+    def delete_game(self, room_id):
+        self.request.app['games'].pop(room_id, None)
 
 
 class GameHandler:
@@ -128,21 +145,27 @@ class GameHandler:
                     )
 
                     if isinstance(exc, PlayerWon):
-                        await ws.send_json(
-                            message(MSG_WON, {'details': 'You Won!'}, None)
-                        )
+                        if exc.args[0] == _ws.player_id:
+                            await _ws.send_json(
+                                message(MSG_WON, {'details': 'You Won!'}, None)
+                            )
+                        else:
+                            await _ws.send_json(
+                                message(MSG_ERROR, {'details': 'You Lose!'}, None)
+                            )
                     elif isinstance(exc, Draw):
                         await _ws.send_json(
                             message(MSG_INFO, {'details': 'Draw!!'}, None)
                         )
+
+                # close other connections first
+                filtered_room = [_ws for _ws in self.room if _ws != ws]
+                for _ws in filtered_room:
                     await _ws.close()
-                del self.game
+
+                await ws.close()
 
             except GameException as exc:
                 await ws.send_json(
                     message(MSG_ERROR, {'details': repr(exc)}, self.player)
                 )
-
-
-
-

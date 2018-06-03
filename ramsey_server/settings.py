@@ -16,7 +16,6 @@ log.addHandler(ch)
 
 env.read_envfile('.env')
 
-DEBUG = env.bool('DEBUG', default=False)
 SITE_HOST = env.str('HOST')
 SITE_PORT = env.int('PORT')
 SECRET_KEY = env.str('SECRET_KEY')

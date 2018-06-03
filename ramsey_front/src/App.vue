@@ -12,7 +12,7 @@
             <v-icon>dashboard</v-icon>
           </v-list-tile-action>
           <v-list-tile-content>
-            <router-link :to="{ name: 'game', params: { roomId: 10 }}">Room</router-link>
+            <router-link :to="{ name: 'game_list'}">Rooms</router-link>
           </v-list-tile-content>
         </v-list-tile>
         <v-list-tile @click="">
@@ -30,13 +30,7 @@
       <v-toolbar-title>Ramsey Game</v-toolbar-title>
     </v-toolbar>
     <v-content>
-      <v-container fluid fill-height>
-        <v-layout justify-center align-center fill-height>
-          <v-flex d-flex>
-            <router-view/>
-          </v-flex>
-        </v-layout>
-      </v-container>
+      <router-view/>
     </v-content>
     <v-footer app fixed>
       <span>&copy; 2017</span>

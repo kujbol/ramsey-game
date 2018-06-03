@@ -11,9 +11,10 @@ from ramsey_game.player import PlayerManager
 
 class GameGraph:
     # TODO game should start with initialized player manager
-    def __init__(self, size, finish_size):
+    def __init__(self, size, finish_size, game_name="Test Game"):
         self.finish_size = finish_size
         self.size = size
+        self.name = game_name
         
         self.graph = networkx.complete_graph(size)
         self.player_manager = PlayerManager(size)

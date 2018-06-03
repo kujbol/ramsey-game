@@ -1,28 +1,33 @@
 <template>
-  <v-container id="main-container">
-    <v-alert v-for="alert in alerts" :color=alert.type :icon=alert.type :key=alert.id v-model=alert.open transition="scale-transition" dismissible>
-      {{ alert.details }}
-    </v-alert>
-    <v-slide-y-transition mode="out-in">
-      <v-layout column align-center>
-        <svg width=1500 height="650">
-          <g class="links"></g>
-          <g class="nodes"></g>
-        </svg>
-      </v-layout>
-    </v-slide-y-transition>
-    <v-dialog v-model="dialog" persistent max-width="380">
-      <v-card>
-        <v-card-title class="headline">Waiting for other players to join</v-card-title>
-        <v-card-text>
-          <v-layout align-center justify-center>
-            <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          </v-layout>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+  <v-container fluid fill-height>
 
-
+    <v-layout justify-center align-center fill-height>
+      <v-flex d-flex>
+        <v-container id="main-container">
+          <v-alert v-for="alert in alerts" :color=alert.type :icon=alert.type :key=alert.id v-model=alert.open transition="scale-transition" dismissible>
+            {{ alert.details }}
+          </v-alert>
+          <v-slide-y-transition mode="out-in">
+            <v-layout column align-center>
+              <svg width=1500 height="650">
+                <g class="links"></g>
+                <g class="nodes"></g>
+              </svg>
+            </v-layout>
+          </v-slide-y-transition>
+          <v-dialog v-model="dialog" persistent max-width="380">
+            <v-card>
+              <v-card-title class="headline">Waiting for other players to join</v-card-title>
+              <v-card-text>
+                <v-layout align-center justify-center>
+                  <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </v-layout>
+              </v-card-text>
+            </v-card>
+          </v-dialog>
+        </v-container>
+      </v-flex>
+    </v-layout>
   </v-container>
 </template>
 
@@ -30,6 +35,7 @@
   import Vue from 'vue'
   import * as d3 from 'd3'
   import * as d3color from 'd3-scale-chromatic'
+  import axios from 'axios'
 
   export default Vue.extend({
     data () {
@@ -85,7 +91,6 @@
                 end_node: event.target.index
               };
               ws.send(JSON.stringify(move_request));
-              console.log(move_request);
             });
 
           u.enter()
@@ -158,10 +163,64 @@
           d.fx = null;
           d.fy = null;
         }
-      }
+      },
+      webSocketConnection: function() {
+        var gameComponent = this;
+        var messageCounter = 0;
+        this.ws = new WebSocket(
+          'ws://0.0.0.0:8000/game/' + this.$route.params.roomId
+        );
+        var ws = this.ws;
+        this.ws.addEventListener('open', function (e) {
+          ws.send(JSON.stringify({'type': 'MSG_CONNECT'}))
+        });
+        this.ws.addEventListener('message', function (e) {
+          var msg = JSON.parse(e.data);
+          console.log(msg);
+          if (msg.type === "MSG_GAME") {
+            gameComponent.$data.dialog = false;
+
+            var graphData = msg.body.available_graph;
+            for (let link of graphData.links) {
+              link.player = 0;
+            }
+
+            for (const [player, player_graph] of Object.entries(msg.body.players_graph)) {
+              for (var i = 0; i < player_graph.links.length; i++){
+                player_graph.links[i].player = player;
+              }
+              graphData.links.push(...player_graph.links);
+            }
+            gameComponent.graphData = graphData;
+          }
+
+          if (msg.type === "MSG_MOVE") {
+          }
+
+          if (msg.type === "MSG_INFO") {
+            messageCounter = messageCounter + 1;
+            gameComponent.$data.alerts.push(
+              {type: 'info', details: msg.body.details, id: messageCounter, open: true}
+              )
+          }
+          if (msg.type === "MSG_ERROR") {
+            messageCounter = messageCounter + 1;
+            gameComponent.$data.alerts.push(
+              {type: 'error', details: msg.body.details, id: messageCounter, open: true}
+            )
+          }
+          if (msg.type === "MSG_WON") {
+          messageCounter = messageCounter + 1;
+          gameComponent.$data.alerts.push(
+              {type: 'success', details: msg.body.details, id: messageCounter, open: true}
+            )
+          }
+        });
+      },
     },
     mounted () {
-      this.renderGraph()
+      this.webSocketConnection();
+      this.renderGraph();
     },
     watch: {
       graphData: {
@@ -169,60 +228,6 @@
         deep: true
       }
     },
-    created: function() {
-      var gameComponent = this;
-      var messageCounter = 0;
-      this.ws = new WebSocket(
-        'ws://0.0.0.0:8000/game/' + this.$route.params.roomId
-      );
-      var ws = this.ws;
-      this.ws.addEventListener('open', function (e) {
-        ws.send(JSON.stringify({'type': 'MSG_CONNECT'}))
-      });
-      this.ws.addEventListener('message', function (e) {
-        var msg = JSON.parse(e.data);
-        console.log(msg);
-        if (msg.type === "MSG_GAME") {
-          gameComponent.$data.dialog = false;
-
-          var graphData = msg.body.available_graph;
-          for (let link of graphData.links) {
-            link.player = 0;
-          }
-
-          for (const [player, player_graph] of Object.entries(msg.body.players_graph)) {
-            for (var i = 0; i < player_graph.links.length; i++){
-              player_graph.links[i].player = player;
-            }
-            graphData.links.push(...player_graph.links);
-            console.log(graphData.links.length)
-          }
-          gameComponent.graphData = graphData;
-        }
-
-        if (msg.type === "MSG_MOVE") {
-        }
-
-        if (msg.type === "MSG_INFO") {
-          messageCounter = messageCounter + 1;
-          gameComponent.$data.alerts.push(
-            {type: 'info', details: msg.body.details, id: messageCounter, open: true}
-            )
-        }
-        if (msg.type === "MSG_ERROR") {
-          messageCounter = messageCounter + 1;
-          gameComponent.$data.alerts.push(
-            {type: 'error', details: msg.body.details, id: messageCounter, open: true}
-          )
-        }
-        if (msg.type === "MSG_WON") {
-        messageCounter = messageCounter + 1;
-        gameComponent.$data.alerts.push(
-            {type: 'success', details: msg.body.details, id: messageCounter, open: true}
-          )
-        }
-      });
-    }
   })
 </script>
 

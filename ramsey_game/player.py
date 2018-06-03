@@ -47,7 +47,7 @@ class PlayerManager:
         self.players_list.append(player_id)
 
     def start_game(self):
-        if not len(self.players) == 2:
+        if self.player_count() != 2:
             raise NotEnoughPlayers
 
         self.state = State.started
@@ -77,3 +77,6 @@ class PlayerManager:
             str(player_id): json_graph.node_link_data(player.graph)
             for player_id, player in self.players.items()
         }
+
+    def player_count(self):
+        return len(self.players)

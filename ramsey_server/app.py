@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 import asyncio
+
+import aiohttp_cors
 from aiohttp_session import session_middleware
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from aiohttp import web
@@ -28,6 +30,8 @@ async def init(loop):
     for route in routes:
         app.router.add_route(route[0], route[1], route[2], name=route[3])
 
+    setup_cors(app)
+
     app.on_shutdown.append(on_shutdown)
 
     app['rooms'] = {}
@@ -37,6 +41,19 @@ async def init(loop):
 
     serv_generator = loop.create_server(handler, SITE_HOST, SITE_PORT)
     return serv_generator, handler, app
+
+
+def setup_cors(app):
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            allow_headers="*",
+            allow_methods="*",
+        ),
+    })
+    for route in app.router.routes():
+        cors.add(route)
+
 
 loop = asyncio.get_event_loop()
 serv_generator, handler, app = loop.run_until_complete(init(loop))

@@ -1,13 +1,16 @@
 import uuid
 
+import aiohttp_cors
 from aiohttp import web
 from aiohttp_session import get_session
 
 
-class Login(web.View):
-    async def get(self):
+class Login(web.View, aiohttp_cors.CorsViewMixin):
+    async def post(self):
         session = await get_session(self.request)
-        if session.get('player'):
-            session['player'] = uuid.uuid4()
+        player_id = session.get('player')
+        if not player_id:
+            player_id = uuid.uuid4()
+            session['player'] = str(player_id)
 
-        return web.Response(status=200, body='success')
+        return web.json_response({'data': {'user_id': str(player_id)}})

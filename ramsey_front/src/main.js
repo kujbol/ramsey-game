@@ -10,8 +10,8 @@ import GameList from './components/GameList'
 
 import 'vuetify/dist/vuetify.min.css'
 
-const serverUrl = 'http://0.0.0.0:8000/';
-const webSocketServerUrl = 'ws://0.0.0.0:8000/';
+const serverUrl = process.env['SERVER_URL'];
+const webSocketServerUrl = process.env['WS_SERVER_URL'];
 
 Vue.use(Vuetify, { theme: {
   primary: '#ee44aa',

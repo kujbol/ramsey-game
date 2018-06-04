@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-dist/
 develop-eggs/
 downloads/
 eggs/
@@ -102,4 +101,3 @@ venv.bak/
 .mypy_cache/
 
 .idea
-!ramsey_front/dist/*

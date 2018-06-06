@@ -116,17 +116,16 @@ class GameHandler:
                 await ws.send_json(
                     message(MSG_INFO, {'details': repr(exc)}, self.player)
                 )
-                return
             except GameException as exc:
                 await ws.send_json(
                     message(MSG_ERROR, {'details': repr(exc)}, self.player)
                 )
-                return
-
-            log.debug('Game started, sending state')
-            for _ws in self.room:
-                await _ws.send_json(message(MSG_GAME, self.game.dumps(), None))
-            return
+            else:
+                log.debug('Game started, sending state')
+                for _ws in self.room:
+                    await _ws.send_json(
+                        message(MSG_GAME, self.game.dumps(), None)
+                    )
 
         if msg_json['type'] == MSG_MOVE:
             log.debug('Received move message')
@@ -136,7 +135,7 @@ class GameHandler:
                 )
                 for _ws in self.room:
                     await _ws.send_json(
-                        message(MSG_GAME, self.game.dumps(), None)
+                        message(MSG_MOVE, msg_json, self.player)
                     )
             except EndGame as exc:
                 for _ws in self.room:

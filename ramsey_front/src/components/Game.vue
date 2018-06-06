@@ -50,6 +50,7 @@
   import {webSocketServerUrl, } from './../main'
 
   export default Vue.extend({
+    name: "Game",
     data () {
       return {
         ws: null,
@@ -79,7 +80,7 @@
 					.nodes(this.graphData.nodes);
 
         var link_force =  d3.forceLink(this.graphData.links).id(function(d) { return d.id});
-        var charge_force = d3.forceManyBody().strength(-13000);
+        var charge_force = d3.forceManyBody().strength(-12000).distanceMax(1500).distanceMin(400);
         var center_force = d3.forceCenter(width / 2, height / 2);
 
         simulation
@@ -187,10 +188,10 @@
         this.ws = new WebSocket(
           webSocketServerUrl + 'game/' + this.$route.params.roomId
         );
-        var ws = this.ws;
         this.ws.addEventListener('open', function (e) {
-          ws.send(JSON.stringify({'type': 'MSG_CONNECT'}))
+          this.send(JSON.stringify({'type': 'MSG_CONNECT'}))
         });
+
         this.ws.addEventListener('message', function (e) {
           var msg = JSON.parse(e.data);
           console.log(msg);
@@ -209,9 +210,23 @@
               graphData.links.push(...player_graph.links);
             }
             gameComponent.graphData = graphData;
+            gameComponent.renderGraph();
           }
 
           if (msg.type === "MSG_MOVE") {
+            const start_node = msg.body.start_node;
+            const end_node = msg.body.end_node;
+            const player = msg.player;
+
+
+            let link = gameComponent.graphData.links.filter(
+              link => (
+                (link.source.id == start_node && link.target.id == end_node) ||
+                (link.target.id == start_node && link.source.id == end_node)
+              )
+            );
+            console.log(link);
+            link[0].player = player;
           }
 
           if (msg.type === "MSG_INFO") {
@@ -237,7 +252,6 @@
     },
     mounted () {
       this.webSocketConnection();
-      this.renderGraph();
     },
     watch: {
       graphData: {

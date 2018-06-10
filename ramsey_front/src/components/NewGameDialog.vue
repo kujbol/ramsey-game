@@ -21,6 +21,10 @@
           :rules="cliqueSizeRules"
           required
         ></v-text-field>
+        <v-checkbox
+          v-model="aiPlayer"
+          label="Is Ai player"
+        ></v-checkbox>
         <v-btn
           :disabled="!valid"
           @click="submit"
@@ -71,6 +75,7 @@
               v => /^\d+$/.test(v) || 'Expected number',
               v => v <= 100 || 'Game size must be less than 100',
             ],
+            aiPlayer: false,
           }
         },
         methods: {
@@ -80,6 +85,7 @@
                 game_name: this.name,
                 graph_size: this.gameSize,
                 clique_size: this.cliqueSize,
+                is_ai: this.aiPlayer,
               }
             };
             axios

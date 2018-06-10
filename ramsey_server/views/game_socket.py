@@ -1,32 +1,11 @@
 import uuid
 
 from aiohttp import web, WSMsgType
-from aiohttp_session import get_session
 
-from ramsey_game.exceptions import (
-    NotEnoughPlayers,
-    GameException,
-    EndGame,
-    PlayerWon,
-    Draw
-)
+from ramsey_game.ai import AIGameGraph
+from ramsey_server.game_handlers.ai import AIGameHandler
+from ramsey_server.game_handlers.player import GameHandler, MSG_ERROR, message
 from ramsey_server.settings import log
-
-
-MSG_MOVE = 'MSG_MOVE'
-MSG_GAME = 'MSG_GAME'
-MSG_ERROR = 'MSG_ERROR'
-MSG_INFO = 'MSG_INFO'
-MSG_WON = 'MSG_WON'
-MSG_CONNECT = 'MSG_CONNECT'
-
-
-def message(msg_type, body, player):
-    return {
-        'type': msg_type,
-        'body': body,
-        'player': str(player)
-    }
 
 
 class GameSocket(web.View):
@@ -52,7 +31,10 @@ class GameSocket(web.View):
 
         room.append(ws)
 
-        game_handler = GameHandler(game, room, player)
+        if isinstance(game, AIGameGraph):
+            game_handler = AIGameHandler(game, room, player)
+        else:
+            game_handler = GameHandler(game, room, player)
 
         async for msg in ws:
             if msg.type == WSMsgType.text:
@@ -98,73 +80,3 @@ class GameSocket(web.View):
         self.request.app['games'].pop(room_id, None)
 
 
-class GameHandler:
-    def __init__(self, game, room, player):
-        self.game = game
-        self.room = room
-        self.player = player
-
-    async def handle_message(self, ws, msg):
-        msg_json = msg.json()
-
-        if msg_json['type'] == MSG_CONNECT:
-            log.debug('Player joined, adding and trying to start game')
-            try:
-                self.game.add_player(self.player)
-                self.game.start_game()
-            except NotEnoughPlayers as exc:
-                await ws.send_json(
-                    message(MSG_INFO, {'details': repr(exc)}, self.player)
-                )
-            except GameException as exc:
-                await ws.send_json(
-                    message(MSG_ERROR, {'details': repr(exc)}, self.player)
-                )
-            else:
-                log.debug('Game started, sending state')
-                for _ws in self.room:
-                    await _ws.send_json(
-                        message(MSG_GAME, self.game.dumps(), None)
-                    )
-
-        if msg_json['type'] == MSG_MOVE:
-            log.debug('Received move message')
-            try:
-                self.game.move(
-                    msg_json['start_node'], msg_json['end_node'], self.player
-                )
-                for _ws in self.room:
-                    await _ws.send_json(
-                        message(MSG_MOVE, msg_json, self.player)
-                    )
-            except EndGame as exc:
-                for _ws in self.room:
-                    await _ws.send_json(
-                        message(MSG_GAME, self.game.dumps(), None)
-                    )
-
-                    if isinstance(exc, PlayerWon):
-                        if exc.args[0] == _ws.player_id:
-                            await _ws.send_json(
-                                message(MSG_WON, {'details': 'You Won!'}, None)
-                            )
-                        else:
-                            await _ws.send_json(
-                                message(MSG_ERROR, {'details': 'You Lose!'}, None)
-                            )
-                    elif isinstance(exc, Draw):
-                        await _ws.send_json(
-                            message(MSG_INFO, {'details': 'Draw!!'}, None)
-                        )
-
-                # close other connections first
-                filtered_room = [_ws for _ws in self.room if _ws != ws]
-                for _ws in filtered_room:
-                    await _ws.close()
-
-                await ws.close()
-
-            except GameException as exc:
-                await ws.send_json(
-                    message(MSG_ERROR, {'details': repr(exc)}, self.player)
-                )

@@ -14,7 +14,7 @@ from ramsey_server.settings import *
 
 
 async def on_shutdown(app):
-    for ws in app['websockets']:
+    for ws in app['rooms'].values():
         await ws.close(code=1001, message='Server shutdown')
 
 

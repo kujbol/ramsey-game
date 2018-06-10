@@ -1,4 +1,5 @@
 import enum
+import random
 from itertools import cycle
 
 import networkx

@@ -1,3 +1,5 @@
+import os
+
 from envparse import env
 import logging
 
@@ -14,8 +16,9 @@ ch.setLevel(logging.DEBUG)
 ch.setFormatter(f)
 log.addHandler(ch)
 
-env.read_envfile('.env')
+root_dir = os.path.dirname(os.path.dirname(__file__))
+env.read_envfile(os.path.join(root_dir, 'ramsey_server/.env'))
 
 SITE_HOST = env.str('HOST')
-SITE_PORT = env.int('PORT')
+SITE_PORT = os.environ.get('PORT', env.str('PORT'))
 SECRET_KEY = env.str('SECRET_KEY')

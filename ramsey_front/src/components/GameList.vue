@@ -28,6 +28,7 @@
 <script>
     import axios from 'axios'
     import NewGameDialog from './NewGameDialog'
+    import {serverUrl, } from './../main'
 
     export default {
       name: "GameList",
@@ -56,7 +57,7 @@
         loadList: function () {
           axios
             .get(
-              'http://0.0.0.0:8000/games',
+              serverUrl + 'games',
               {headers: {'Access-Control-Allow-Origin': '*',}}
             )
             .then(response => {
@@ -68,7 +69,7 @@
           this.newGameDialog=false;
           axios
             .get(
-              'http://0.0.0.0:8000/games',
+              serverUrl + 'games',
               {headers: {'Access-Control-Allow-Origin': '*',}}
             )
             .then(response => {

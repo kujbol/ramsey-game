@@ -21,6 +21,10 @@
           :rules="cliqueSizeRules"
           required
         ></v-text-field>
+        <v-checkbox
+          v-model="aiPlayer"
+          label="Is Ai player"
+        ></v-checkbox>
         <v-btn
           :disabled="!valid"
           @click="submit"
@@ -35,6 +39,7 @@
 
 <script>
     import axios from 'axios'
+    import {serverUrl, } from './../main'
     export default {
         name: "NewGameDialog",
         props: ['visible'],
@@ -70,6 +75,7 @@
               v => /^\d+$/.test(v) || 'Expected number',
               v => v <= 100 || 'Game size must be less than 100',
             ],
+            aiPlayer: false,
           }
         },
         methods: {
@@ -79,11 +85,12 @@
                 game_name: this.name,
                 graph_size: this.gameSize,
                 clique_size: this.cliqueSize,
+                is_ai: this.aiPlayer,
               }
             };
             axios
               .post(
-                'http://0.0.0.0:8000/games', data,
+                serverUrl + 'games', data,
                 {headers: {'Access-Control-Allow-Origin': '*',}}
               )
               .then(

@@ -10,6 +10,9 @@ import GameList from './components/GameList'
 
 import 'vuetify/dist/vuetify.min.css'
 
+const serverUrl = process.env['SERVER_URL'];
+const webSocketServerUrl = process.env['WS_SERVER_URL'];
+
 Vue.use(Vuetify, { theme: {
   primary: '#ee44aa',
   secondary: '#424242',
@@ -29,3 +32,6 @@ new Vue({
   components: { App, NewGameDialog, GameList},
   template: '<App/>'
 });
+
+
+export {serverUrl, webSocketServerUrl}

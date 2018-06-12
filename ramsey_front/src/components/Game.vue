@@ -9,7 +9,7 @@
           </v-alert>
           <v-slide-y-transition mode="out-in">
             <v-layout column align-center>
-              <svg width=1500 height="650">
+              <svg id="svg-graph" width=1500 height="630">
                 <g class="links"></g>
                 <g class="nodes"></g>
               </svg>
@@ -28,6 +28,17 @@
         </v-container>
       </v-flex>
     </v-layout>
+    <!--<v-speed-dial fixed right bottom>-->
+      <!--<v-btn-->
+        <!--slot="activator"-->
+        <!--color="primary"-->
+        <!--dark-->
+        <!--fab-->
+      <!--&gt;-->
+        <!--<v-icon>edit</v-icon>-->
+        <!--<v-icon>close</v-icon>-->
+      <!--</v-btn>-->
+    <!--</v-speed-dial>-->
   </v-container>
 </template>
 
@@ -35,9 +46,14 @@
   import Vue from 'vue'
   import * as d3 from 'd3'
   import * as d3color from 'd3-scale-chromatic'
-  import axios from 'axios'
 
+  import {webSocketServerUrl, } from './../main'
+
+  var color = d3color.schemeCategory10;
+  var colorMapping = {0: color[5]};
+  
   export default Vue.extend({
+    name: "Game",
     data () {
       return {
         ws: null,
@@ -51,25 +67,74 @@
     },
     methods:{
       renderGraph() {
-        var color = d3color.schemeCategory10;
-        var svg = d3.select("svg"),
-          width = 1500,
-          height = 650;
-
-        var simulation = d3.forceSimulation(this.graphData.nodes)
-          .force('charge', d3.forceManyBody().strength(-10000))
-          .force('center', d3.forceCenter(width / 2, height / 2))
-          .force('link', d3.forceLink().links(this.graphData.links))
-          .on('tick', ticked);
-
-
-        d3.select('.links')
-          .selectAll('line')
-          .data(this.graphData.links);
-
-        var graphData = this.graphData;
         var ws = this.ws;
-        var colorMapping = {0: color[5]};
+
+        var radius = 10;
+
+        d3.selectAll("#svg-graph > *").remove();
+
+        var svg = d3.select("#svg-graph"),
+            width = +svg.attr("width"),
+            height = +svg.attr("height");
+
+        var simulation = d3.forceSimulation()
+					.nodes(this.graphData.nodes);
+
+        var link_force =  d3.forceLink(this.graphData.links).id(function(d) { return d.id});
+        var charge_force = d3.forceManyBody().strength(-12000).distanceMax(1500).distanceMin(400);
+        var center_force = d3.forceCenter(width / 2, height / 2);
+
+        simulation
+          .force("charge_force", charge_force)
+          .force("center_force", center_force)
+          .force("links", link_force);
+
+        simulation.on("tick", tickActions );
+
+        var g = svg.append("g")
+          .attr("class", "everything");
+
+        var link = g.append("g")
+          .attr("class", "links")
+          .selectAll("line")
+          .data(this.graphData.links)
+          .enter().append("line")
+          .attr("stroke-width", 8)
+          .attr("stroke-opacity", 0.6)
+          .on("mousedown", function(event){
+              var move_request = {
+                type: 'MSG_MOVE',
+                start_node: event.source.index,
+                end_node: event.target.index
+              };
+              ws.send(JSON.stringify(move_request));
+            })
+          .style("stroke", linkColour);
+
+        var node = g.append("g")
+          .attr("class", "nodes")
+          .selectAll("circle")
+          .data(this.graphData.nodes)
+          .enter()
+          .append("circle")
+          .attr("r", radius)
+          .attr("fill", circleColour);
+
+
+        var drag_handler = d3.drag()
+          .on("start", drag_start)
+          .on("drag", drag_drag)
+          .on("end", drag_end);
+        drag_handler(node);
+
+        var zoom_handler = d3.zoom()
+          .on("zoom", zoom_actions);
+
+        zoom_handler(svg);
+
+        function circleColour(d){
+          return "cadetblue"
+        }
 
         function colorFromUUID(uuid) {
           var mappedColor = colorMapping[uuid];
@@ -80,100 +145,54 @@
           return mappedColor;
         }
 
-        function updateLinks() {
-          var u = d3.select('.links')
-            .selectAll('line')
-            .data(graphData.links)
-            .on("click", function(event){
-              var move_request = {
-                type: 'MSG_MOVE',
-                start_node: event.source.index,
-                end_node: event.target.index
-              };
-              ws.send(JSON.stringify(move_request));
-            });
-
-          u.enter()
-            .append('line')
-            .merge(u)
-            .attr('x1', function(d) {
-              return d.source.x
-            })
-            .attr('y1', function(d) {
-              return d.source.y
-            })
-            .attr('x2', function(d) {
-              return d.target.x
-            })
-            .attr('y2', function(d) {
-              return d.target.y
-            })
-            .attr("stroke-width", 10 )
-            .attr("stroke", function(d) { return colorFromUUID(d.player); });
-
-          u.exit().remove()
+        function linkColour(d){
+          return colorFromUUID(d.player);
         }
 
-        function updateNodes() {
-          var u = d3.select('.nodes')
-            .selectAll('text')
-            .data(graphData.nodes)
-              .call(d3.drag()
-              .on("start", dragstarted)
-              .on("drag", dragged)
-              .on("end", dragended));
-
-          u.enter()
-            .append('text')
-            .text(function(d) {
-              return d.id
-            })
-            .merge(u)
-            .attr('x', function(d) {
-              return d.x
-            })
-            .attr('y', function(d) {
-              return d.y
-            })
-            .attr('dy', function(d) {
-              return 10;
-            });
-
-          u.exit().remove()
+        function drag_start(d) {
+         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
         }
 
-        function ticked() {
-          updateLinks();
-          updateNodes();
-        }
-
-        function dragstarted(d) {
-          if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        }
-
-        function dragged(d) {
+        function drag_drag(d) {
           d.fx = d3.event.x;
           d.fy = d3.event.y;
         }
 
-        function dragended(d) {
+        function drag_end(d) {
           if (!d3.event.active) simulation.alphaTarget(0);
           d.fx = null;
           d.fy = null;
         }
+
+        function zoom_actions(){
+            g.attr("transform", d3.event.transform)
+        }
+
+        function tickActions() {
+           node
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+
+          link
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+        }
+
       },
       webSocketConnection: function() {
         var gameComponent = this;
         var messageCounter = 0;
         this.ws = new WebSocket(
-          'ws://0.0.0.0:8000/game/' + this.$route.params.roomId
+          webSocketServerUrl + 'game/' + this.$route.params.roomId
         );
-        var ws = this.ws;
         this.ws.addEventListener('open', function (e) {
-          ws.send(JSON.stringify({'type': 'MSG_CONNECT'}))
+          this.send(JSON.stringify({'type': 'MSG_CONNECT'}))
         });
+
         this.ws.addEventListener('message', function (e) {
           var msg = JSON.parse(e.data);
           console.log(msg);
@@ -192,9 +211,23 @@
               graphData.links.push(...player_graph.links);
             }
             gameComponent.graphData = graphData;
+            gameComponent.renderGraph();
           }
 
           if (msg.type === "MSG_MOVE") {
+            const start_node = msg.body.start_node;
+            const end_node = msg.body.end_node;
+            const player = msg.player;
+
+
+            let link = gameComponent.graphData.links.filter(
+              link => (
+                (link.source.id == start_node && link.target.id == end_node) ||
+                (link.target.id == start_node && link.source.id == end_node)
+              )
+            );
+            console.log(link);
+            link[0].player = player;
           }
 
           if (msg.type === "MSG_INFO") {
@@ -220,7 +253,6 @@
     },
     mounted () {
       this.webSocketConnection();
-      this.renderGraph();
     },
     watch: {
       graphData: {
@@ -233,11 +265,18 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    .nodes {
-      fill: cadetblue;
-    }
-    .links {
+    .links line {
       stroke: #FFFFFF;
       stroke-opacity: 0.6;
     }
+
+    .nodes text {
+      stroke: #ffffff
+    }
+
+    .nodes circle {
+      stroke: black	;
+      stroke-width: 0px;
+    }
+
 </style>

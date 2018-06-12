@@ -49,6 +49,9 @@
 
   import {webSocketServerUrl, } from './../main'
 
+  var color = d3color.schemeCategory10;
+  var colorMapping = {0: color[5]};
+  
   export default Vue.extend({
     name: "Game",
     data () {
@@ -66,8 +69,6 @@
       renderGraph() {
         var ws = this.ws;
 
-        var color = d3color.schemeCategory10;
-        var colorMapping = {0: color[5]};
         var radius = 10;
 
         d3.selectAll("#svg-graph > *").remove();

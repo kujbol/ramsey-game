@@ -9,15 +9,7 @@ class GameList(web.View, aiohttp_cors.CorsViewMixin):
         response = {
             "data": {
                 "games": [
-                    {
-                        'id': game_id,
-                        'name': game.name,
-                        'size': game.size,
-                        'finish_size': game.finish_size,
-                        'expected_players': 2,
-                        'player_count': game.player_manager.player_count(),
-                        'state': game.player_manager.state.name
-                    }
+                    game.dumps_preview(game_id)
                     for game_id, game in games.items()
                 ]
             }

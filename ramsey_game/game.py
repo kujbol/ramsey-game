@@ -42,6 +42,17 @@ class GameGraph:
             'players_graph': self.player_manager.dumps()
         }
 
+    def dumps_preview(self, game_id):
+        return {
+            'id': game_id,
+            'name': self.name,
+            'size': self.size,
+            'finish_size': self.finish_size,
+            'expected_players': 2,
+            'player_count': self.player_manager.player_count(),
+            'state': self.player_manager.state.name
+        }
+
     def _delete_available_move(self, player_id, u, v):
         try:
             self.graph.remove_edge(u, v)

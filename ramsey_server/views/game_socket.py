@@ -5,7 +5,7 @@ from aiohttp import web, WSMsgType
 from ramsey_game.ai import AIGameGraph
 from ramsey_server.game_handlers.ai import AIGameHandler
 from ramsey_server.game_handlers.player import GameHandler, MSG_ERROR, message
-from ramsey_server.settings import log
+from ramsey_server.logger import log
 
 
 class GameSocket(web.View):

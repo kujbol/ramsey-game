@@ -5,7 +5,23 @@ from ramsey_game.exceptions import (
     GameException,
     NotEnoughPlayers
 )
-from ramsey_server.settings import log
+from ramsey_server.logger import log
+
+
+MSG_MOVE = 'MSG_MOVE'
+MSG_GAME = 'MSG_GAME'
+MSG_ERROR = 'MSG_ERROR'
+MSG_INFO = 'MSG_INFO'
+MSG_WON = 'MSG_WON'
+MSG_CONNECT = 'MSG_CONNECT'
+
+
+def message(msg_type, body, player):
+    return {
+        'type': msg_type,
+        'body': body,
+        'player': str(player)
+    }
 
 
 class GameHandler:
@@ -85,21 +101,6 @@ class GameHandler:
             log.debug('Game started, sending state')
             for _ws in self.room:
                 await _ws.send_json(
-                    message(MSG_GAME, self.game.dumps(), None)
+                    message(MSG_GAME, self.game.dumps(), _ws.player_id)
                 )
 
-
-MSG_MOVE = 'MSG_MOVE'
-MSG_GAME = 'MSG_GAME'
-MSG_ERROR = 'MSG_ERROR'
-MSG_INFO = 'MSG_INFO'
-MSG_WON = 'MSG_WON'
-MSG_CONNECT = 'MSG_CONNECT'
-
-
-def message(msg_type, body, player):
-    return {
-        'type': msg_type,
-        'body': body,
-        'player': str(player)
-    }
